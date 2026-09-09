@@ -1,4 +1,4 @@
-# 🏆 RRsystem — Elo Ranking & Rating Engine
+# RRsystem — Elo Ranking & Rating Engine
 
 A Python implementation of an advanced **Elo ranking system** for ranking teams, players, or competitors from historical match results.
 
