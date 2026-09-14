@@ -21,6 +21,8 @@ RRsystem/
 ├── data/
 ├── notebooks/
 │   └── advanced_elo_ranking.ipynb
+|   └── seasonal
+|   └── 4_dim
 ├── src/
 │   ├── __init__.py
 │   └── elo.py
