@@ -20,9 +20,13 @@ A Python implementation of an advanced **Elo ranking system** for ranking teams,
 RRsystem/
 ├── data/
 ├── notebooks/
-│   └── advanced_elo_ranking.ipynb
-|   └── seasonal
-|   └── 4_dim
+│   ├── advanced_elo_ranking.ipynb            # base Elo workflow
+│   ├── basic_seasonal_rating (2).ipynb       # core seasonal update logic
+│   ├── four_dimensional_elo_ratings.ipynb    # the four-rating framework (prototype)
+│   ├── seasonal_rating_explained.ipynb       # 1. Seasonal  — in depth
+│   ├── overall_rating_explained.ipynb        # 2. Overall   — in depth
+│   ├── prosperity_rating_explained.ipynb     # 3. Prosperity — in depth
+│   └── thinkers_rating_explained.ipynb       # 4. Thinkers  — in depth
 ├── src/
 │   ├── __init__.py
 │   └── elo.py
@@ -76,15 +80,55 @@ New Rating = Old Rating + K × Margin Coefficient × (Actual - Expected)
 
 The margin coefficient increases the impact of more decisive victories while accounting for the rating difference between competitors.
 
-## Notebook
+## Notebooks
 
-Open:
+### Getting started
 
 ```text
 notebooks/advanced_elo_ranking.ipynb
 ```
 
-The notebook demonstrates the complete workflow, including match processing, ranking generation, season regression, and K/home-advantage parameter tuning.
+Demonstrates the complete base workflow: match processing, ranking generation, season regression,
+and K/home-advantage parameter tuning.
+
+### The four-dimensional rating system
+
+`four_dimensional_elo_ratings.ipynb` sketches four complementary ratings. Each then gets a
+notebook that builds it properly, validates it against ground truth from a simulator, and states
+what it can and cannot support.
+
+| # | Rating | Question it answers | Reads from | Status |
+|---|---|---|---|---|
+| 1 | **Seasonal** | How are you doing *now*? | `match_events` + `season_id` | ranked |
+| 2 | **Overall** | How strong are you? | `match_events` | ranked |
+| 3 | **Prosperity** | Which way are you going? | `overall_rating_events` | ranked, with a confidence band |
+| 4 | **Thinkers** | Are your decisions good? | `match_events.strategy_id` *(new capture)* | **diagnostic only** |
+
+The framework comes out as **three ratings and one diagnostic**. Thinkers does not clear the
+reliability bar the other notebooks set for a ranked component, and
+`thinkers_rating_explained.ipynb` shows why rather than reweighting until something emerges.
+
+Each notebook is self-contained and executable, and each clears a trap specific to its rating:
+
+| Rating | The trap | The fix |
+|---|---|---|
+| Seasonal | the season boundary is the only real design decision | store an append-only event log, not final ratings |
+| Overall | "won't results from years ago pollute it forever?" | measure Elo's memory — it is already a forgetting algorithm |
+| Prosperity | apparent improvement is mostly convergence from 1500 | a measurement window, plus a field-relative target |
+| Thinkers | outcomes after a decision are selected on form | a within-player matched control — which then was not enough |
+
+### Method
+
+The later notebooks share four habits worth knowing about before reading them:
+
+- **Placebo runs** — build the world where the effect is zero and check what the estimator reports.
+  This is what invalidated the Thinkers prototype rule.
+- **Split-half reliability**, Spearman–Brown corrected — a statistic that cannot agree with itself
+  across two halves of the same career cannot support a leaderboard.
+- **Multi-seed replication** — a rank correlation over a couple of dozen competitors has error bars
+  of roughly ±0.2. An earlier draft of the Prosperity notebook shipped a confident finding that did
+  not survive a second seed, and says so.
+- **Power curves** — the only way to tell "not enough data yet" from "this will never work".
 
 ## Reference
 
