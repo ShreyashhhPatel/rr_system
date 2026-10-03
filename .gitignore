@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Tooling
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Generated rating tables. The event logs are reproducible from match_events
+# plus a policy row, so they are rebuilt rather than versioned.
+data/*.csv
+!data/match_events.csv
+
+# macOS
+.DS_Store

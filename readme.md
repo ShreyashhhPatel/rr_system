@@ -29,10 +29,71 @@ RRsystem/
 │   └── thinkers_rating_explained.ipynb       # 4. Thinkers  — in depth
 ├── src/
 │   ├── __init__.py
-│   └── elo.py
+│   ├── elo.py           # expected_score, update_ratings, EloCalculator, draw model
+│   ├── matches.py       # the Match fact + a loader that validates before processing
+│   ├── policies.py      # every tunable, as data -- loadable from rating_policies
+│   ├── ranking.py       # 1. Seasonal   — K schedule, boundary rule, standings
+│   ├── overall.py       # 2. Overall    — career K, career stats, confidence bands
+│   ├── prosperity.py    # 3. Prosperity — trajectory, coherence, dispersion
+│   ├── thinkers.py      # 4. Thinkers   — discipline, adaptation value, diagnostic
+│   └── reliability.py   # split-half, Spearman–Brown, power curves, the rankable gate
+├── tests/
 ├── requirements.txt
+├── requirements-dev.txt
 └── README.md
 ```
+
+## Package layout
+
+Each rating module corresponds to the notebook that derives it, and the notebook is
+the place to look for *why* it is shaped that way.
+
+```python
+from src.matches import load_matches
+from src.overall import run_overall, build_overall_board
+from src.prosperity import prepare_window, measure_components, build_prosperity
+
+matches = load_matches("data/match_events.csv")       # validates, then sorts
+_, _, overall_events = run_overall(matches)           # append-only event log
+board = build_overall_board(overall_events)           # materialised view
+
+window = prepare_window(overall_events)
+prosperity = build_prosperity(measure_components(window))
+```
+
+Three conventions are worth knowing before using the package:
+
+- **Parameters are data.** Every module takes an optional policy object from
+  `src.policies`; nothing reads a module-level constant. `save_policies` /
+  `load_policies` round-trip them through a `rating_policies` table, so a parameter
+  change is a data change and historical recomputes stay reproducible.
+- **Event logs are append-only, and boards are views over them.** `run_season` and
+  `run_overall` return a rating-event log; `build_standings(events, as_of=...)` and
+  `build_overall_board` materialise a leaderboard from it. That `as_of` replay is
+  what makes a season auditable and rebuildable at any date.
+- **`is_rankable` is computed, never configured.** `src.reliability` measures a
+  component's split-half reliability and gates ranking on it. This is why
+  `build_thinkers_diagnostic` returns `status = "provisional"` rather than a rating.
+
+Two name pairs are easy to confuse and are kept distinct on purpose:
+
+| | Means | Note |
+|---|---|---|
+| `elo.regress_to_mean(r, mean, fraction)` | move `fraction` of the way *toward* the mean | used by the `EloCalculator` workflow |
+| `ranking.carry_over(r, lam, mean)` | *keep* `lam` of the deviation | used by the seasonal boundary; `fraction == 1 - lam` |
+
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+The suite encodes the invariants the notebooks established rather than just
+exercising the code — the Elo update is zero-sum, `delta / k_used` recovers the
+expected score, the draw model is unbiased, `theil_sen_slope` is reproducible
+across calls, and a placebo world where strategy does nothing still fools the
+naive before/after estimator while the matched-control estimator survives it.
 
 ## Installation
 
